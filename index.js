@@ -9,6 +9,9 @@ const authRoute = require('./routes/auth');
 const financeRoute = require('./routes/finance');
 const shopRoute = require('./routes/shop');
 const eventRoute = require('./routes/events');
+const equipmentRoute = require('./routes/equipment');
+const reviewRoute = require('./routes/review');
+const classRoute = require('./routes/class');
 
 // Initialize Environment Variables
 dotenv.config();
@@ -54,6 +57,9 @@ app.use('/api/user', authRoute);
 app.use('/api/finance', financeRoute);
 app.use('/api/shop', shopRoute);
 app.use('/api/events', eventRoute);
+app.use('/api/equipment', equipmentRoute);
+app.use('/api/review', reviewRoute);
+app.use('/api/class', classRoute);
 
 // Base Route (Health Check)
 app.get('/', (req, res) => {
