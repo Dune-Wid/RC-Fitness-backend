@@ -11,9 +11,9 @@ const authRoute = require('./routes/auth');
 dotenv.config();
 
 // --- 1. MIDDLEWARE ---
-// CORS allows your frontend (hosted elsewhere) to communicate with this backend
+// CORS allows your frontend to communicate with this backend securely
 app.use(cors({ 
-    origin: '*', // Allows requests from any origin (Crucial for Vercel)
+    origin: '*', 
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'auth-token']
 }));
@@ -21,22 +21,37 @@ app.use(cors({
 // Parses incoming JSON data from the frontend
 app.use(express.json());
 
+// --- 2. SERVERLESS DATABASE CONNECTION MANAGER ---
+// This prevents the "buffering timed out after 10000ms" error on Vercel
+const connectDB = async () => {
+    // If Mongoose is already connected (readyState 1), reuse the connection
+    if (mongoose.connection.readyState >= 1) {
+        return;
+    }
+    
+    // Otherwise, establish a fresh connection
+    try {
+        await mongoose.connect(process.env.MONGO_URI);
+        console.log('✅ Connected to MongoDB Atlas');
+    } catch (err) {
+        console.error('❌ MongoDB Connection Error:', err);
+    }
+};
 
-// --- 2. DATABASE CONNECTION ---
-mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log('✅ Connected to MongoDB Atlas'))
-  .catch((err) => console.error('❌ MongoDB Connection Error:', err));
-
+// CRITICAL: Force Vercel to check the DB connection BEFORE processing any request
+app.use(async (req, res, next) => {
+    await connectDB();
+    next();
+});
 
 // --- 3. ROUTES ---
 // Mount the authentication and user management routes
 app.use('/api/user', authRoute);
 
-// Base Route (Health Check) - Useful to test if Vercel deployment is live
+// Base Route (Health Check)
 app.get('/', (req, res) => {
-    res.send('RC Fitness API is successfully running on Vercel!');
+    res.send('RC Fitness API is running smoothly on Vercel with Serverless DB Management!');
 });
-
 
 // --- 4. SERVER INITIALIZATION & VERCEL EXPORT ---
 const PORT = process.env.PORT || 5000;
