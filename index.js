@@ -6,6 +6,9 @@ const cors = require('cors');
 
 // Import Routes
 const authRoute = require('./routes/auth');
+const financeRoute = require('./routes/finance');
+const shopRoute = require('./routes/shop');
+const eventRoute = require('./routes/events');
 
 // Initialize Environment Variables
 dotenv.config();
@@ -47,6 +50,10 @@ app.use(async (req, res, next) => {
 // --- 3. ROUTES ---
 // Mount the authentication and user management routes
 app.use('/api/user', authRoute);
+// Mount the new feature routes
+app.use('/api/finance', financeRoute);
+app.use('/api/shop', shopRoute);
+app.use('/api/events', eventRoute);
 
 // Base Route (Health Check)
 app.get('/', (req, res) => {
