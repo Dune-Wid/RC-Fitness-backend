@@ -23,6 +23,19 @@ router.delete('/plans/delete/:id', async (req, res) => {
   } catch (err) { res.status(500).json(err); }
 });
 
+router.put('/payments/update/:id', async (req, res) => {
+  try {
+    const updatedPayment = await Payment.findByIdAndUpdate(
+      req.params.id,
+      { $set: req.body },
+      { new: true }
+    );
+    res.status(200).json(updatedPayment);
+  } catch (err) {
+    res.status(500).json(err);
+  }
+});
+
 // Payments
 router.get('/payments', async (req, res) => {
   try {
