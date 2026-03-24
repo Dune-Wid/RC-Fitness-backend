@@ -1,7 +1,11 @@
 const router = require('express').Router();
 const Equipment = require('../models/Equipment');
 
+<<<<<<< Updated upstream
 // GET all equipment
+=======
+// Get all equipment
+>>>>>>> Stashed changes
 router.get('/', async (req, res) => {
     try {
         const equipment = await Equipment.find().sort({ createdAt: -1 });
@@ -11,6 +15,7 @@ router.get('/', async (req, res) => {
     }
 });
 
+<<<<<<< Updated upstream
 // CREATE new equipment
 router.post('/', async (req, res) => {
     try {
@@ -27,11 +32,20 @@ router.post('/', async (req, res) => {
 
         const savedEquipment = await newEquipment.save();
         res.status(201).json(savedEquipment);
+=======
+// Add new equipment
+router.post('/', async (req, res) => {
+    try {
+        const newEq = new Equipment(req.body);
+        const savedEq = await newEq.save();
+        res.status(201).json(savedEq);
+>>>>>>> Stashed changes
     } catch (err) {
         res.status(500).json(err);
     }
 });
 
+<<<<<<< Updated upstream
 // DELETE equipment
 router.delete('/:id', async (req, res) => {
     try {
@@ -66,6 +80,27 @@ router.put('/:id/service', async (req, res) => {
             { new: true }
         );
         res.status(200).json(updatedEquipment);
+=======
+// Update equipment status
+router.put('/:id', async (req, res) => {
+    try {
+        const updatedEq = await Equipment.findByIdAndUpdate(
+            req.params.id,
+            { $set: req.body },
+            { new: true }
+        );
+        res.status(200).json(updatedEq);
+    } catch (err) {
+        res.status(500).json(err);
+    }
+});
+
+// Delete equipment
+router.delete('/:id', async (req, res) => {
+    try {
+        await Equipment.findByIdAndDelete(req.params.id);
+        res.status(200).json("Equipment deleted successfully.");
+>>>>>>> Stashed changes
     } catch (err) {
         res.status(500).json(err);
     }
