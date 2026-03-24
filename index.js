@@ -61,7 +61,12 @@ app.get('/', (req, res) => {
 });
 
 // --- 4. SERVER INITIALIZATION & VERCEL EXPORT ---
-const PORT = process.env.PORT || 5000;
+if (!process.env.VERCEL) {
+    const PORT = process.env.PORT || 5000;
+    app.listen(PORT, () => {
+        console.log(`🚀 Server is running locally on port ${PORT}`);
+    });
+}
 
 // This starts the server when you are testing locally on your computer
 if (process.env.NODE_ENV !== 'production') {
