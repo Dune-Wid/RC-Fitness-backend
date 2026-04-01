@@ -26,7 +26,8 @@ const UserSchema = new mongoose.Schema({
 
     // Staff Specifics
     shift: { type: String },
-    specialties: { type: [String] }
+    specialties: { type: [String] },
+    salary: { type: Number, default: 0 }
 }, { timestamps: true });
 
 module.exports = mongoose.model('User', UserSchema);
