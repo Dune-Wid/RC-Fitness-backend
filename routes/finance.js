@@ -1,6 +1,20 @@
 const router = require('express').Router();
 const Plan = require('../models/Plan');
 const Payment = require('../models/Payment');
+const User = require('../models/User');
+const jwt = require('jsonwebtoken');
+
+// Security Middleware
+const verifyAdmin = (req, res, next) => {
+    const token = req.header('auth-token');
+    if (!token) return res.status(401).send('Access Denied');
+    try {
+        const verified = jwt.verify(token, process.env.JWT_SECRET);
+        if (verified.role !== 'admin') return res.status(403).send('Admin Only');
+        req.user = verified;
+        next();
+    } catch (err) { res.status(400).send('Invalid Token'); }
+};
 
 // Plans
 router.get('/plans', async (req, res) => {
@@ -9,21 +23,21 @@ router.get('/plans', async (req, res) => {
     res.json(plans);
   } catch (err) { res.status(500).json(err); }
 });
-router.post('/plans/add', async (req, res) => {
+router.post('/plans/add', verifyAdmin, async (req, res) => {
   const newPlan = new Plan(req.body);
   try {
     const savedPlan = await newPlan.save();
     res.status(200).json(savedPlan);
   } catch (err) { res.status(500).json(err); }
 });
-router.delete('/plans/delete/:id', async (req, res) => {
+router.delete('/plans/delete/:id', verifyAdmin, async (req, res) => {
   try {
     await Plan.findByIdAndDelete(req.params.id);
     res.status(200).json("Plan deleted.");
   } catch (err) { res.status(500).json(err); }
 });
 
-router.put('/plans/update/:id', async (req, res) => {
+router.put('/plans/update/:id', verifyAdmin, async (req, res) => {
   try {
     const updatedPlan = await Plan.findByIdAndUpdate(
       req.params.id,
@@ -36,7 +50,7 @@ router.put('/plans/update/:id', async (req, res) => {
   }
 });
 
-router.put('/payments/update/:id', async (req, res) => {
+router.put('/payments/update/:id', verifyAdmin, async (req, res) => {
   try {
     const updatedPayment = await Payment.findByIdAndUpdate(
       req.params.id,
@@ -59,7 +73,7 @@ router.get('/payments', async (req, res) => {
   } catch (err) { res.status(500).json(err); }
 });
 
-router.post('/payments/add', async (req, res) => {
+router.post('/payments/add', verifyAdmin, async (req, res) => {
   const newPayment = new Payment(req.body);
   try {
     const savedPayment = await newPayment.save();
@@ -113,10 +127,42 @@ router.post('/payments/add', async (req, res) => {
     responseObj.emailSent = emailStatus.sent;
     responseObj.emailError = emailStatus.error;
 
+    // --- AUTOMATION: Update Member Profile ---
+    try {
+      const memberEmail = req.body.email;
+      const memberName = req.body.member;
+      
+      // Find by email (preferred) or exact name
+      const user = await User.findOne({ 
+        $or: [
+          { email: memberEmail },
+          { fullName: memberName }
+        ]
+      });
+
+      if (user) {
+        // Calculate Expiry
+        const start = new Date(req.body.date);
+        let daysToAdd = 30;
+        const durationText = req.body.duration || '1 Month';
+        if (durationText.toLowerCase().includes('3')) daysToAdd = 90;
+        else if (durationText.toLowerCase().includes('6')) daysToAdd = 180;
+        else if (durationText.toLowerCase().includes('12')) daysToAdd = 365;
+
+        user.membershipExpiry = new Date(start.getTime() + daysToAdd * 24 * 60 * 60 * 1000);
+        user.membershipType = durationText;
+        user.treadmillAccess = req.body.treadmillAccess === true;
+        user.status = 'Active';
+        await user.save();
+      }
+    } catch (automationErr) {
+      console.error("Automation error (updating user):", automationErr);
+    }
+
     res.status(200).json(responseObj);
   } catch (err) { res.status(500).json(err); }
 });
-router.delete('/payments/delete/:id', async (req, res) => {
+router.delete('/payments/delete/:id', verifyAdmin, async (req, res) => {
   try {
     await Payment.findByIdAndDelete(req.params.id);
     res.status(200).json("Payment deleted.");

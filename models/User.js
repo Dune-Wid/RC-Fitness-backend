@@ -21,7 +21,8 @@ const UserSchema = new mongoose.Schema({
         chest: Number,
         bicep: Number
     },
-    membershipType: { type: String },
+    membershipType: { type: String, default: 'None' },
+    membershipExpiry: { type: Date },
     treadmillAccess: { type: Boolean, default: false },
 
     // Staff Specifics

@@ -6,6 +6,7 @@ const paymentSchema = new mongoose.Schema({
   status: { type: String, required: true },
   duration: { type: String },
   email: { type: String },
+  treadmillAccess: { type: Boolean, default: false },
   createdAt: { type: Date, default: Date.now }
 });
 module.exports = mongoose.model('Payment', paymentSchema);
