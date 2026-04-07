@@ -2,7 +2,11 @@ const router = require('express').Router();
 const Equipment = require('../models/Equipment');
 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 // GET all equipment
+=======
+// Get all equipment
+>>>>>>> Stashed changes
 =======
 // Get all equipment
 >>>>>>> Stashed changes
@@ -15,6 +19,7 @@ router.get('/', async (req, res) => {
     }
 });
 
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream
 // CREATE new equipment
 router.post('/', async (req, res) => {
@@ -40,11 +45,20 @@ router.post('/', async (req, res) => {
         const savedEq = await newEq.save();
         res.status(201).json(savedEq);
 >>>>>>> Stashed changes
+=======
+// Add new equipment
+router.post('/', async (req, res) => {
+    const newEquipment = new Equipment(req.body);
+    try {
+        const savedEquipment = await newEquipment.save();
+        res.status(201).json(savedEquipment);
+>>>>>>> Stashed changes
     } catch (err) {
         res.status(500).json(err);
     }
 });
 
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream
 // DELETE equipment
 router.delete('/:id', async (req, res) => {
@@ -85,11 +99,21 @@ router.put('/:id/service', async (req, res) => {
 router.put('/:id', async (req, res) => {
     try {
         const updatedEq = await Equipment.findByIdAndUpdate(
+=======
+// Update equipment status
+router.put('/:id', async (req, res) => {
+    try {
+        const updatedEquipment = await Equipment.findByIdAndUpdate(
+>>>>>>> Stashed changes
             req.params.id,
             { $set: req.body },
             { new: true }
         );
+<<<<<<< Updated upstream
         res.status(200).json(updatedEq);
+=======
+        res.status(200).json(updatedEquipment);
+>>>>>>> Stashed changes
     } catch (err) {
         res.status(500).json(err);
     }
@@ -99,7 +123,11 @@ router.put('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
     try {
         await Equipment.findByIdAndDelete(req.params.id);
+<<<<<<< Updated upstream
         res.status(200).json("Equipment deleted successfully.");
+>>>>>>> Stashed changes
+=======
+        res.status(200).json("Equipment has been deleted...");
 >>>>>>> Stashed changes
     } catch (err) {
         res.status(500).json(err);

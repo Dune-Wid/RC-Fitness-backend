@@ -13,12 +13,31 @@ router.get('/', async (req, res) => {
 
 // Submit a new review
 router.post('/', async (req, res) => {
+<<<<<<< Updated upstream
     try {
         const newReview = new Review(req.body);
         const savedReview = await newReview.save();
         res.status(201).json(savedReview);
     } catch (err) {
         res.status(500).json(err);
+=======
+    const newReview = new Review(req.body);
+    try {
+        const savedReview = await newReview.save();
+        res.status(201).json(savedReview);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Delete a review
+router.delete('/:id', async (req, res) => {
+    try {
+        await Review.findByIdAndDelete(req.params.id);
+        res.status(200).json("Review deleted");
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+>>>>>>> Stashed changes
     }
 });
 

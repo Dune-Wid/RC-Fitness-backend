@@ -10,6 +10,7 @@ const financeRoute = require('./routes/finance');
 const shopRoute = require('./routes/shop');
 const eventRoute = require('./routes/events');
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 const equipmentRoute = require('./routes/equipment');
 const reviewRoute = require('./routes/review');
 const classRoute = require('./routes/class');
@@ -21,14 +22,19 @@ const equipmentRoute = require('./routes/equipment');
 const classesRoute = require('./routes/classes');
 const reviewsRoute = require('./routes/reviews');
 >>>>>>> Stashed changes
+=======
+const equipmentRoute = require('./routes/equipment');
+const classesRoute = require('./routes/classes');
+const reviewsRoute = require('./routes/reviews');
+>>>>>>> Stashed changes
 
 // Initialize Environment Variables
 dotenv.config();
 
 // --- 1. MIDDLEWARE ---
 // CORS allows your frontend to communicate with this backend securely
-app.use(cors({ 
-    origin: '*', 
+app.use(cors({
+    origin: '*',
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'auth-token']
 }));
@@ -43,7 +49,7 @@ const connectDB = async () => {
     if (mongoose.connection.readyState >= 1) {
         return;
     }
-    
+
     // Otherwise, establish a fresh connection
     try {
         await mongoose.connect(process.env.MONGO_URI);
@@ -67,6 +73,7 @@ app.use('/api/finance', financeRoute);
 app.use('/api/shop', shopRoute);
 app.use('/api/events', eventRoute);
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 app.use('/api/equipment', equipmentRoute);
 app.use('/api/review', reviewRoute);
 app.use('/api/class', classRoute);
@@ -74,6 +81,11 @@ app.use('/api/class', classRoute);
 app.use('/api/workouts', workoutsRoute);
 app.use('/api/diet', dietRoute);
 app.use('/api/prs', prsRoute);
+app.use('/api/equipment', equipmentRoute);
+app.use('/api/classes', classesRoute);
+app.use('/api/reviews', reviewsRoute);
+>>>>>>> Stashed changes
+=======
 app.use('/api/equipment', equipmentRoute);
 app.use('/api/classes', classesRoute);
 app.use('/api/reviews', reviewsRoute);
@@ -86,13 +98,6 @@ app.get('/', (req, res) => {
 
 // --- 4. SERVER INITIALIZATION & VERCEL EXPORT ---
 const PORT = process.env.PORT || 5000;
-
-// This starts the server when you are testing locally on your computer
-if (process.env.NODE_ENV !== 'production') {
-    app.listen(PORT, () => {
-        console.log(`🚀 Server is running locally on port ${PORT}`);
-    });
-}
 
 // CRITICAL: This line exports the Express app so Vercel can run it as a Serverless Function
 module.exports = app;

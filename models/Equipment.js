@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 
+<<<<<<< Updated upstream
 const EquipmentSchema = new mongoose.Schema({
 <<<<<<< Updated upstream
     equipmentId: { type: String, required: true, unique: true },
@@ -30,3 +31,15 @@ EquipmentSchema.pre('save', function(next) {
 
 >>>>>>> Stashed changes
 module.exports = mongoose.model('Equipment', EquipmentSchema);
+=======
+const equipmentSchema = new mongoose.Schema({
+  id_tag: { type: String, default: "EQ-XXX" },
+  name: { type: String, required: true },
+  location: { type: String },
+  status: { type: String, default: 'WORKING' },
+  daysUntilService: { type: Number, default: 30 },
+  createdAt: { type: Date, default: Date.now }
+});
+
+module.exports = mongoose.model('Equipment', equipmentSchema);
+>>>>>>> Stashed changes
