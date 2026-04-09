@@ -9,14 +9,20 @@ const authRoute = require('./routes/auth');
 const financeRoute = require('./routes/finance');
 const shopRoute = require('./routes/shop');
 const eventRoute = require('./routes/events');
+const workoutsRoute = require('./routes/workouts');
+const dietRoute = require('./routes/diet');
+const prsRoute = require('./routes/prs');
+const equipmentRoute = require('./routes/equipment');
+const classesRoute = require('./routes/classes');
+const reviewsRoute = require('./routes/reviews');
 
 // Initialize Environment Variables
 dotenv.config();
 
 // --- 1. MIDDLEWARE ---
 // CORS allows your frontend to communicate with this backend securely
-app.use(cors({ 
-    origin: '*', 
+app.use(cors({
+    origin: '*',
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'auth-token']
 }));
@@ -31,7 +37,7 @@ const connectDB = async () => {
     if (mongoose.connection.readyState >= 1) {
         return;
     }
-    
+
     // Otherwise, establish a fresh connection
     try {
         await mongoose.connect(process.env.MONGO_URI);
@@ -54,6 +60,13 @@ app.use('/api/user', authRoute);
 app.use('/api/finance', financeRoute);
 app.use('/api/shop', shopRoute);
 app.use('/api/events', eventRoute);
+app.use('/api/workouts', workoutsRoute);
+app.use('/api/diet', dietRoute);
+app.use('/api/prs', prsRoute);
+app.use('/api/equipment', equipmentRoute);
+app.use('/api/classes', classesRoute);
+app.use('/api/reviews', reviewsRoute);
+
 
 // Base Route (Health Check)
 app.get('/', (req, res) => {
