@@ -60,6 +60,8 @@ router.post('/checkout', async (req, res) => {
   const { userEmail, userName, products, totalAmount, promoCode, discountAmount, paymentMethod, billingDetails } = req.body;
   
   try {
+    const finalAmount = totalAmount - (discountAmount || 0);
+
     // 1. Create the Order
     const newOrder = new Order({
       userEmail,
@@ -70,7 +72,7 @@ router.post('/checkout', async (req, res) => {
       discountAmount,
       paymentMethod,
       billingDetails,
-      status: (paymentMethod === 'Card' || paymentMethod === 'Koko') ? 'Paid' : 'Pending'
+      status: (paymentMethod === 'Koko') ? 'Paid' : 'Pending'
     });
     const savedOrder = await newOrder.save();
 
@@ -81,11 +83,48 @@ router.post('/checkout', async (req, res) => {
       });
     }
 
-    res.status(200).json(savedOrder);
+    let payhereHash = null;
+    let merchantId = process.env.PAYHERE_MERCHANT_ID || '1228490';
+    
+    if (paymentMethod === 'Card') {
+        const crypto = require('crypto');
+        const merchantSecret = process.env.PAYHERE_SECRET || 'MzI1MjA3NTM1NzM4MTMyNzAyMTQxNjIzNDk5MzEzMjAzNjIwODYwNA==';
+        const orderId = savedOrder._id.toString();
+        const amount = parseFloat(finalAmount).toFixed(2);
+        const currency = 'LKR';
+        const hashedSecret = crypto.createHash('md5').update(merchantSecret).digest('hex').toUpperCase();
+        const hashString = merchantId + orderId + amount + currency + hashedSecret;
+        payhereHash = crypto.createHash('md5').update(hashString).digest('hex').toUpperCase();
+    }
+
+    res.status(200).json({ order: savedOrder, payhereHash, merchantId });
   } catch (err) {
     console.error("Checkout Error:", err);
     res.status(500).json(err);
   }
+});
+
+router.post('/payhere/notify', async (req, res) => {
+    const { merchant_id, order_id, payhere_amount, payhere_currency, status_code, md5sig } = req.body;
+
+    try {
+        const crypto = require('crypto');
+        const merchantSecret = process.env.PAYHERE_SECRET || 'MzI1MjA3NTM1NzM4MTMyNzAyMTQxNjIzNDk5MzEzMjAzNjIwODYwNA==';
+        const hashedSecret = crypto.createHash('md5').update(merchantSecret).digest('hex').toUpperCase();
+        
+        const localMd5sig = crypto.createHash('md5').update(
+            merchant_id + order_id + payhere_amount + payhere_currency + status_code + hashedSecret
+        ).digest('hex').toUpperCase();
+
+        if (localMd5sig === md5sig && status_code == 2) {
+            await Order.findByIdAndUpdate(order_id, { status: 'Paid' });
+        }
+    } catch (err) {
+        console.error("PayHere notify processing error:", err);
+    }
+    
+    // Always respond 200 to PayHere webhook so they don't retry unnecessarily
+    res.status(200).send();
 });
 
 router.get('/orders', async (req, res) => {

@@ -1,0 +1,44 @@
+const router = require('express').Router();
+const User = require('../models/User');
+const { sendEmail, emailTemplates } = require('../utils/mailer');
+
+/**
+ * GET /api/cron/membership-reminder
+ * Call this endpoint daily (e.g., via a cron service like cron-job.org or Vercel Cron).
+ * It scans all members for expiring memberships and sends reminder emails.
+ */
+router.get('/membership-reminder', async (req, res) => {
+    try {
+        const now = new Date();
+
+        // Find members whose membership expires in exactly 3 days or 1 day
+        const members = await User.find({ role: 'member', membershipExpiry: { $gt: now } });
+
+        const reminders = [];
+
+        for (const user of members) {
+            if (!user.email || !user.membershipExpiry) continue;
+
+            const msLeft = new Date(user.membershipExpiry).getTime() - now.getTime();
+            const daysLeft = Math.ceil(msLeft / (1000 * 60 * 60 * 24));
+
+            if (daysLeft === 3 || daysLeft === 1) {
+                const result = await sendEmail(
+                    user.email,
+                    emailTemplates.membershipExpiryReminder(user, daysLeft)
+                );
+                reminders.push({ member: user.fullName, email: user.email, daysLeft, ...result });
+            }
+        }
+
+        res.json({
+            message: `Checked ${members.length} members. Sent ${reminders.filter(r => r.sent).length} reminder(s).`,
+            reminders
+        });
+    } catch (err) {
+        console.error('Membership reminder cron error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+module.exports = router;

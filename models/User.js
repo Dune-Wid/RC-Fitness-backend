@@ -28,6 +28,7 @@ const UserSchema = new mongoose.Schema({
     // Staff Specifics
     shift: { type: String },
     specialties: { type: [String] },
+    jobRole: { type: String, default: 'Staff' },
     salary: { type: Number, default: 0 }
 }, { timestamps: true });
 

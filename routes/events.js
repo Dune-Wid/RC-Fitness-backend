@@ -1,7 +1,21 @@
 const router = require('express').Router();
 const Event = require('../models/Event');
+const Announcement = require('../models/Announcement');
 const EventRegistration = require('../models/EventRegistration');
 const nodemailer = require('nodemailer');
+const jwt = require('jsonwebtoken');
+
+// Security Middleware
+const verifyAdmin = (req, res, next) => {
+  const token = req.header('auth-token');
+  if (!token) return res.status(401).send("Access Denied");
+  try {
+    const verified = jwt.verify(token, process.env.JWT_SECRET || 'secret');
+    if (verified.role !== 'admin') return res.status(403).send("Admin Access Required");
+    req.user = verified;
+    next();
+  } catch (err) { res.status(400).send("Invalid Token"); }
+};
 
 router.get('/', async (req, res) => {
   try {
@@ -109,4 +123,28 @@ router.get('/registrations/:id', async (req, res) => {
     res.json(registrations);
   } catch (err) { res.status(500).json(err); }
 });
+
+// --- ANNOUNCEMENT ROUTES ---
+router.get('/announcements/all', async (req, res) => {
+  try {
+    const announcements = await Announcement.find().sort({ createdAt: -1 });
+    res.json(announcements);
+  } catch (err) { res.status(500).json(err); }
+});
+
+router.post('/announcements/add', verifyAdmin, async (req, res) => {
+  try {
+    const newAnn = new Announcement(req.body);
+    const saved = await newAnn.save();
+    res.status(200).json(saved);
+  } catch (err) { res.status(500).json(err); }
+});
+
+router.delete('/announcements/delete/:id', verifyAdmin, async (req, res) => {
+  try {
+    await Announcement.findByIdAndDelete(req.params.id);
+    res.status(200).json("Announcement deleted.");
+  } catch (err) { res.status(500).json(err); }
+});
+
 module.exports = router;

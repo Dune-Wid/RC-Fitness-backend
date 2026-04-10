@@ -1,8 +1,12 @@
-const router = require('express').Router();
 const Plan = require('../models/Plan');
 const Payment = require('../models/Payment');
 const User = require('../models/User');
+const Payroll = require('../models/Payroll');
+const Expense = require('../models/Expense');
+const JobRole = require('../models/JobRole');
 const jwt = require('jsonwebtoken');
+const router = require('express').Router();
+const { sendEmail, emailTemplates } = require('../utils/mailer');
 
 // Security Middleware
 const verifyAdmin = (req, res, next) => {
@@ -16,13 +20,14 @@ const verifyAdmin = (req, res, next) => {
     } catch (err) { res.status(400).send('Invalid Token'); }
 };
 
-// Plans
+// Plans (public - so Membership page can fetch without auth)
 router.get('/plans', async (req, res) => {
   try {
     const plans = await Plan.find();
     res.json(plans);
   } catch (err) { res.status(500).json(err); }
 });
+
 router.post('/plans/add', verifyAdmin, async (req, res) => {
   const newPlan = new Plan(req.body);
   try {
@@ -30,6 +35,7 @@ router.post('/plans/add', verifyAdmin, async (req, res) => {
     res.status(200).json(savedPlan);
   } catch (err) { res.status(500).json(err); }
 });
+
 router.delete('/plans/delete/:id', verifyAdmin, async (req, res) => {
   try {
     await Plan.findByIdAndDelete(req.params.id);
@@ -50,21 +56,6 @@ router.put('/plans/update/:id', verifyAdmin, async (req, res) => {
   }
 });
 
-router.put('/payments/update/:id', verifyAdmin, async (req, res) => {
-  try {
-    const updatedPayment = await Payment.findByIdAndUpdate(
-      req.params.id,
-      { $set: req.body },
-      { new: true }
-    );
-    res.status(200).json(updatedPayment);
-  } catch (err) {
-    res.status(500).json(err);
-  }
-});
-
-const nodemailer = require('nodemailer');
-
 // Payments
 router.get('/payments', async (req, res) => {
   try {
@@ -73,75 +64,46 @@ router.get('/payments', async (req, res) => {
   } catch (err) { res.status(500).json(err); }
 });
 
+router.put('/payments/update/:id', verifyAdmin, async (req, res) => {
+  try {
+    const updatedPayment = await Payment.findByIdAndUpdate(
+      req.params.id,
+      { $set: req.body },
+      { new: true }
+    );
+
+    // Send payment update email notification
+    if (updatedPayment && updatedPayment.email) {
+      sendEmail(updatedPayment.email, emailTemplates.paymentUpdated(updatedPayment)).catch(console.error);
+    }
+
+    res.status(200).json(updatedPayment);
+  } catch (err) {
+    res.status(500).json(err);
+  }
+});
+
 router.post('/payments/add', verifyAdmin, async (req, res) => {
   const newPayment = new Payment(req.body);
   try {
     const savedPayment = await newPayment.save();
     let emailStatus = { sent: false, error: null };
 
-    // Send Invoice Email
+    // Send Invoice/Confirmation Email
     if (req.body.email) {
-      if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-        emailStatus.error = "Email failed: Missing EMAIL_USER and EMAIL_PASS environment variables. Add them to Vercel/Local env.";
-      } else {
-        let transporter = nodemailer.createTransport({
-          service: 'gmail',
-          auth: {
-            user: process.env.EMAIL_USER,
-            pass: process.env.EMAIL_PASS
-          }
-        });
-
-        const mailOptions = {
-          from: process.env.EMAIL_USER,
-          to: req.body.email,
-          subject: 'Invoice for RC Fitness Gym Payment',
-          html: `
-            <div style="font-family: Arial, sans-serif; background: #fff; padding: 20px; color: #000; border: 1px solid #ddd; border-radius: 8px; max-width: 400px; margin: auto;">
-              <h2 style="text-align: center; color: #333;">RC FITNESS GYM</h2>
-              <hr style="border:0; border-top:1px solid #ddd; margin: 15px 0;" />
-              <p><strong>Member:</strong> ${savedPayment.member}</p>
-              <p><strong>Date:</strong> ${savedPayment.date}</p>
-              <p><strong>Plan:</strong> ${savedPayment.duration}</p>
-              <p><strong>Status:</strong> ${savedPayment.status}</p>
-              <h3 style="text-align: center; margin-top: 20px;">Amount: LKR ${savedPayment.amount}</h3>
-              <hr style="border:0; border-top:1px solid #ddd; margin: 15px 0;" />
-              <p style="text-align: center; font-size: 12px; color: #777;">Thank you 💪</p>
-            </div>
-          `
-        };
-
-        try {
-          await transporter.sendMail(mailOptions);
-          emailStatus.sent = true;
-        } catch (error) {
-          console.error("Email send error:", error);
-          emailStatus.error = "Email rejected by Server (Check Gmail App Passwords permissions). Error: " + error.message;
-        }
-      }
+      const result = await sendEmail(req.body.email, emailTemplates.paymentAdded(savedPayment));
+      emailStatus = result;
     } else {
       emailStatus.error = "No Email mapped to this Member. Did you match the name exactly?";
     }
-
-    const responseObj = savedPayment.toObject();
-    responseObj.emailSent = emailStatus.sent;
-    responseObj.emailError = emailStatus.error;
 
     // --- AUTOMATION: Update Member Profile ---
     try {
       const memberEmail = req.body.email;
       const memberName = req.body.member;
-      
-      // Find by email (preferred) or exact name
-      const user = await User.findOne({ 
-        $or: [
-          { email: memberEmail },
-          { fullName: memberName }
-        ]
-      });
+      const user = await User.findOne({ $or: [{ email: memberEmail }, { fullName: memberName }] });
 
       if (user) {
-        // Calculate Expiry
         const start = new Date(req.body.date);
         let daysToAdd = 30;
         const durationText = req.body.duration || '1 Month';
@@ -159,13 +121,97 @@ router.post('/payments/add', verifyAdmin, async (req, res) => {
       console.error("Automation error (updating user):", automationErr);
     }
 
+    const responseObj = savedPayment.toObject();
+    responseObj.emailSent = emailStatus.sent;
+    responseObj.emailError = emailStatus.error;
+
     res.status(200).json(responseObj);
   } catch (err) { res.status(500).json(err); }
 });
+
 router.delete('/payments/delete/:id', verifyAdmin, async (req, res) => {
   try {
     await Payment.findByIdAndDelete(req.params.id);
     res.status(200).json("Payment deleted.");
+  } catch (err) { res.status(500).json(err); }
+});
+
+// --- PAYROLL ROUTES ---
+router.get('/payroll', verifyAdmin, async (req, res) => {
+  try {
+    const payroll = await Payroll.find().sort({ createdAt: -1 });
+    res.json(payroll);
+  } catch (err) { res.status(500).json(err); }
+});
+
+router.post('/payroll/add', verifyAdmin, async (req, res) => {
+  try {
+    const newPayroll = new Payroll(req.body);
+    const saved = await newPayroll.save();
+    res.status(200).json(saved);
+  } catch (err) { res.status(500).json(err); }
+});
+
+// --- EXPENSE ROUTES ---
+router.get('/expenses', verifyAdmin, async (req, res) => {
+  try {
+    const expenses = await Expense.find().sort({ date: -1 });
+    res.json(expenses);
+  } catch (err) { res.status(500).json(err); }
+});
+
+router.post('/expenses/add', verifyAdmin, async (req, res) => {
+  try {
+    const newExpense = new Expense(req.body);
+    const saved = await newExpense.save();
+    res.status(200).json(saved);
+  } catch (err) { res.status(500).json(err); }
+});
+
+router.delete('/expenses/delete/:id', verifyAdmin, async (req, res) => {
+  try {
+    await Expense.findByIdAndDelete(req.params.id);
+    res.status(200).json("Expense deleted.");
+  } catch (err) { res.status(500).json(err); }
+});
+
+// --- JOB ROLE ROUTES ---
+router.get('/job-roles', verifyAdmin, async (req, res) => {
+  try {
+    let roles = await JobRole.find().sort({ baseSalary: -1 });
+    if (roles.length === 0) {
+       const defaultRoles = [
+           { roleName: 'Manager', baseSalary: 100000 },
+           { roleName: 'Trainer', baseSalary: 60000 },
+           { roleName: 'Receptionist', baseSalary: 45000 },
+           { roleName: 'Cleaner', baseSalary: 35000 }
+       ];
+       await JobRole.insertMany(defaultRoles);
+       roles = await JobRole.find().sort({ baseSalary: -1 });
+    }
+    res.json(roles);
+  } catch (err) { res.status(500).json(err); }
+});
+
+router.post('/job-roles/add', verifyAdmin, async (req, res) => {
+  try {
+     const role = new JobRole(req.body);
+     const saved = await role.save();
+     res.status(200).json(saved);
+  } catch (err) { res.status(500).json(err); }
+});
+
+router.put('/job-roles/update/:id', verifyAdmin, async (req, res) => {
+  try {
+      const updated = await JobRole.findByIdAndUpdate(req.params.id, { $set: req.body }, { new: true });
+      res.json(updated);
+  } catch (err) { res.status(500).json(err); }
+});
+
+router.delete('/job-roles/delete/:id', verifyAdmin, async (req, res) => {
+  try {
+     await JobRole.findByIdAndDelete(req.params.id);
+     res.json("Role deleted.");
   } catch (err) { res.status(500).json(err); }
 });
 
