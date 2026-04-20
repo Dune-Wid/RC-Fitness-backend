@@ -20,6 +20,27 @@ const cronRoute = require('./routes/cron');
 // Initialize Environment Variables
 dotenv.config();
 
+// --- SERVERLESS DATABASE CONNECTION MANAGER ---
+// This prevents the "buffering timed out after 10000ms" error on Vercel
+const connectDB = async () => {
+    // If Mongoose is already connected (readyState 1), reuse the connection
+    if (mongoose.connection.readyState >= 1) {
+        return;
+    }
+    
+    // Otherwise, establish a fresh connection
+    try {
+        console.log('🔄 Attempting to connect to MongoDB...');
+        await mongoose.connect(process.env.MONGO_URI);
+        console.log('✅ Connected to MongoDB Atlas - Database:', mongoose.connection.name);
+    } catch (err) {
+        console.error('❌ MongoDB Connection Error:', err);
+    }
+};
+
+// Eager connection for local development visibility
+connectDB();
+
 // --- 1. MIDDLEWARE ---
 // CORS allows your frontend to communicate with this backend securely
 app.use(cors({ 
@@ -31,22 +52,6 @@ app.use(cors({
 // Parses incoming JSON data from the frontend
 app.use(express.json());
 
-// --- 2. SERVERLESS DATABASE CONNECTION MANAGER ---
-// This prevents the "buffering timed out after 10000ms" error on Vercel
-const connectDB = async () => {
-    // If Mongoose is already connected (readyState 1), reuse the connection
-    if (mongoose.connection.readyState >= 1) {
-        return;
-    }
-    
-    // Otherwise, establish a fresh connection
-    try {
-        await mongoose.connect(process.env.MONGO_URI);
-        console.log('✅ Connected to MongoDB Atlas');
-    } catch (err) {
-        console.error('❌ MongoDB Connection Error:', err);
-    }
-};
 
 // CRITICAL: Force Vercel to check the DB connection BEFORE processing any request
 app.use(async (req, res, next) => {
