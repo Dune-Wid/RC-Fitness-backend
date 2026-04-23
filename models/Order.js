@@ -15,6 +15,7 @@ const orderSchema = new mongoose.Schema({
   promoCode: { type: String },
   discountAmount: { type: Number, default: 0 },
   paymentMethod: { type: String, enum: ['COD', 'Card', 'Koko', 'Bank'], default: 'COD' },
+  receiptImage: { type: String }, // Store receipt data here
   billingDetails: {
     firstName: String,
     lastName: String,
