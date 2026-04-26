@@ -3,6 +3,7 @@ const Product = require('../models/Product');
 const Order = require('../models/Order');
 const Promotion = require('../models/Promotion');
 const jwt = require('jsonwebtoken');
+const { sendEmail, emailTemplates } = require('../utils/mailer');
 
 // Security Middleware
 const verifyAdmin = (req, res, next) => {
@@ -103,6 +104,10 @@ router.post('/checkout', async (req, res) => {
 
     // Success response - No payment gateway hashes needed
     res.status(200).json({ order: savedOrder });
+
+    // 4. Send Confirmation Email (Background)
+    sendEmail(userEmail, emailTemplates.shopOrderPlaced(savedOrder));
+
   } catch (err) {
     console.error("Checkout Error:", err);
     res.status(500).json(err);
@@ -124,6 +129,11 @@ router.put('/orders/:id/status', verifyAdmin, async (req, res) => {
       { new: true }
     );
     res.json(updatedOrder);
+
+    // Send Status Update Email (Background)
+    if (updatedOrder && updatedOrder.userEmail) {
+      sendEmail(updatedOrder.userEmail, emailTemplates.shopOrderStatusChanged(updatedOrder));
+    }
   } catch (err) { res.status(500).json(err); }
 });
 

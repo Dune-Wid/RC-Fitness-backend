@@ -91,6 +91,60 @@ const emailTemplates = {
                     <p style="text-align:center;color:#555;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;margin-top:16px;">Visit our front desk or log in to renew your plan.</p>
                 </div>
             </div>`
+    }),
+    
+    shopOrderPlaced: (order) => ({
+        subject: `🛒 Order Confirmed - RC Store #${order._id.toString().slice(-6).toUpperCase()}`,
+        html: `
+            <div style="${styles.wrapper}">
+                <div style="${styles.header}">
+                    <h1 style="margin:0;font-size:26px;font-weight:900;letter-spacing:-1px;">RC FITNESS</h1>
+                    <p style="margin:6px 0 0;font-size:12px;opacity:0.7;letter-spacing:0.15em;text-transform:uppercase;">Order Confirmation</p>
+                </div>
+                <div style="${styles.body}">
+                    <p style="margin-bottom:16px;font-size:14px;color:#aaa;">Hello <strong style="color:#fff">${order.userName}</strong>, thank you for your order! We've received it and are processing it now.</p>
+                    <div style="background:#000; border:1px solid #222; border-radius:8px; padding:15px; margin-bottom:20px;">
+                        <p style="${styles.label}">Items</p>
+                        ${order.products.map(p => `
+                            <div style="${styles.row}">
+                                <span style="color:#fff;">${p.name} <span style="color:#666;font-size:12px">x${p.quantity}</span></span>
+                                <span style="color:#fff;font-weight:700;">LKR ${Number(p.price * p.quantity).toLocaleString()}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div>
+                        <div style="${styles.row}"><span style="${styles.label}">Subtotal</span><span style="${styles.value}">LKR ${Number(order.totalAmount + (order.discountAmount || 0)).toLocaleString()}</span></div>
+                        <div style="${styles.row}"><span style="${styles.label}">Discount</span><span style="${styles.value}" style="color:#ef4444;">- LKR ${Number(order.discountAmount || 0).toLocaleString()}</span></div>
+                        <div style="${styles.row}"><span style="${styles.label}">Total Paid</span><span style="${styles.value}" style="color:#dc2626; font-size:18px;">LKR ${Number(order.totalAmount).toLocaleString()}</span></div>
+                        <div style="${styles.row}"><span style="${styles.label}">Payment</span><span style="${styles.value}">${order.paymentMethod}</span></div>
+                    </div>
+                    <hr style="${styles.divider}"/>
+                    <p style="text-align:center;color:#555;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;">You will receive another update when your order status changes.</p>
+                </div>
+            </div>`
+    }),
+
+    shopOrderStatusChanged: (order) => ({
+        subject: `📦 Order Update: ${order.status} - RC Store`,
+        html: `
+            <div style="${styles.wrapper}">
+                <div style="${styles.header}">
+                    <h1 style="margin:0;font-size:26px;font-weight:900;letter-spacing:-1px;">RC FITNESS</h1>
+                    <p style="margin:6px 0 0;font-size:12px;opacity:0.7;letter-spacing:0.15em;text-transform:uppercase;">Order Status Update</p>
+                </div>
+                <div style="${styles.body}">
+                    <p style="margin-bottom:16px;font-size:14px;color:#aaa;">Hello <strong style="color:#fff">${order.userName}</strong>, the status of your order <strong>#${order._id.toString().slice(-6).toUpperCase()}</strong> has been updated:</p>
+                    <div style="text-align:center; padding:20px 0;">
+                        <span style="${styles.badge(order.status === 'Completed' || order.status === 'Paid' ? '#22c55e' : order.status === 'Cancelled' ? '#ef4444' : '#3b82f6')}">${order.status}</span>
+                    </div>
+                    <div>
+                        <div style="${styles.row}"><span style="${styles.label}">Order ID</span><span style="${styles.value}">#${order._id}</span></div>
+                        <div style="${styles.row}"><span style="${styles.label}">Total Amount</span><span style="${styles.value}">LKR ${Number(order.totalAmount).toLocaleString()}</span></div>
+                    </div>
+                    <hr style="${styles.divider}"/>
+                    <p style="text-align:center;color:#555;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;">Visit the shop or contact us if you have any questions.</p>
+                </div>
+            </div>`
     })
 };
 
