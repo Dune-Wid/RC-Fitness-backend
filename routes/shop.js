@@ -99,6 +99,8 @@ router.post('/checkout', async (req, res) => {
       });
     }
 
+    const savedOrder = await newOrder.save();
+
     // Success response - No payment gateway hashes needed
     res.status(200).json({ order: savedOrder });
   } catch (err) {
