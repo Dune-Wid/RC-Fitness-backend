@@ -87,9 +87,12 @@ router.post('/checkout', async (req, res) => {
       receiptImage, // Save receipt if provided
       status: 'Pending' // All COD and Bank orders start as Pending
     });
-    const savedOrder = await newOrder.save();
+    // 2. Increment Promo Usage if applicable
+    if (promoCode) {
+      await Promotion.findOneAndUpdate({ code: promoCode }, { $inc: { usageCount: 1 } });
+    }
 
-    // 2. Decrement Stock for each product
+    // 3. Decrement Stock for each product
     for (const item of products) {
       await Product.findByIdAndUpdate(item.productId, {
         $inc: { stock: -item.quantity }
@@ -141,11 +144,24 @@ router.post('/promotions/add', verifyAdmin, async (req, res) => {
 
 router.post('/promotions/validate', async (req, res) => {
   try {
+    const now = new Date();
     const promo = await Promotion.findOne({ code: req.body.code, isActive: true });
     if (promo) {
+      // Check expiry
+      if (promo.endDate && now > promo.endDate) {
+        return res.status(404).json("Promo code has expired.");
+      }
+      // Check start date
+      if (promo.startDate && now < promo.startDate) {
+        return res.status(404).json("Promo code is not yet active.");
+      }
+      // Check user limit
+      if (promo.userLimit && promo.usageCount >= promo.userLimit) {
+        return res.status(404).json("Promo code has reached its usage limit.");
+      }
       res.status(200).json(promo);
     } else {
-      res.status(404).json("Invalid or expired promo code.");
+      res.status(404).json("Invalid or inactive promo code.");
     }
   } catch (err) { res.status(500).json(err); }
 });
