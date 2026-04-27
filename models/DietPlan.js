@@ -5,6 +5,7 @@ const DietPlanSchema = new mongoose.Schema({
     goal: { type: String, default: 'Weight Loss' },
     targetCalories: { type: Number, default: 2000 },
     coachNote: { type: String },
+    dietDetails: { type: String },
     meals: [{
         time: String,
         name: String,
