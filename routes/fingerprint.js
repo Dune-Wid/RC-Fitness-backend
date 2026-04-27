@@ -71,7 +71,7 @@ router.get('/latest', async (req, res) => {
     try {
         const latestScan = await FingerPrintScan.findOne()
             .sort({ scannedAt: -1 })
-            .populate('userId', ['fullName', 'nic', 'email', 'phone', 'membershipType', 'physicalStats', 'status']);
+            .populate('userId', ['fullName', 'nic', 'email', 'phone', 'membershipType', 'physicalStats', 'status', 'membershipExpiry']);
         
         if (!latestScan) {
             return res.status(404).json({ msg: 'No scans found' });
