@@ -50,7 +50,7 @@ app.use(cors({
 }));
 
 // Parses incoming JSON data from the frontend
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
 
 
 // CRITICAL: Force Vercel to check the DB connection BEFORE processing any request
