@@ -52,6 +52,14 @@ router.post('/request', verifyUser, async (req, res) => {
     } catch (err) { res.status(500).send(err.message); }
 });
 
+// Cancel a workout plan request
+router.post('/cancel-request', verifyUser, async (req, res) => {
+    try {
+        await User.findByIdAndUpdate(req.user._id, { workoutPlanRequested: false });
+        res.json({ message: 'Workout plan request cancelled successfully' });
+    } catch (err) { res.status(500).send(err.message); }
+});
+
 // Get all workout plans (Admin)
 router.get('/all', verifyUser, async (req, res) => {
     try {
