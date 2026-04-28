@@ -24,6 +24,8 @@ const UserSchema = new mongoose.Schema({
     membershipType: { type: String, default: 'None' },
     membershipExpiry: { type: Date },
     treadmillAccess: { type: Boolean, default: false },
+    dietPlanRequested: { type: Boolean, default: false },
+    workoutPlanRequested: { type: Boolean, default: false },
 
     // Staff Specifics
     shift: { type: String },
