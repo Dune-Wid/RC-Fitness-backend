@@ -30,45 +30,8 @@ router.post('/update', verifyUser, async (req, res) => {
             { $set: req.body },
             { new: true, upsert: true }
         );
-        const User = require('../models/User');
-        await User.findByIdAndUpdate(req.body.userId, { dietPlanRequested: false });
         res.json(updated);
     } catch (err) { res.status(400).send(err.message); }
-});
-
-// Get user's diet plan request status
-router.get('/status', verifyUser, async (req, res) => {
-    try {
-        const User = require('../models/User');
-        const user = await User.findById(req.user._id);
-        if (!user) return res.status(404).send('User not found');
-        res.json({ dietPlanRequested: user.dietPlanRequested || false });
-    } catch (err) { res.status(500).send(err.message); }
-});
-
-// Request a diet plan
-router.post('/request', verifyUser, async (req, res) => {
-    try {
-        const User = require('../models/User');
-        await User.findByIdAndUpdate(req.user._id, { dietPlanRequested: true });
-        res.json({ message: 'Diet plan requested successfully' });
-    } catch (err) { res.status(500).send(err.message); }
-});
-
-// Get all diet plans (Admin)
-router.get('/all', verifyUser, async (req, res) => {
-    try {
-        const plans = await DietPlan.find();
-        res.json(plans);
-    } catch (err) { res.status(500).send(err.message); }
-});
-
-// Delete a diet plan (Admin)
-router.delete('/delete/:userId', verifyUser, async (req, res) => {
-    try {
-        await DietPlan.findOneAndDelete({ userId: req.params.userId });
-        res.json({ message: 'Diet plan deleted' });
-    } catch (err) { res.status(500).send(err.message); }
 });
 
 module.exports = router;

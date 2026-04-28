@@ -16,6 +16,7 @@ const prRoute = require('./routes/prs');
 const workoutRoute = require('./routes/workouts');
 const dietPlanRoute = require('./routes/dietPlan');
 const cronRoute = require('./routes/cron');
+const fingerprintRoute = require('./routes/fingerprint');
 
 // Initialize Environment Variables
 dotenv.config();
@@ -76,6 +77,7 @@ app.use('/api/workouts', workoutRoute);
 app.use('/api/diet-plans', dietPlanRoute);
 app.use('/api/workout-plans', workoutPlanRoute);
 app.use('/api/cron', cronRoute);
+app.use('/api/fingerprint', fingerprintRoute);
 
 // Base Route (Health Check)
 app.get('/', (req, res) => {
