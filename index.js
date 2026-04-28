@@ -62,6 +62,8 @@ app.use(async (req, res, next) => {
 // --- 3. ROUTES ---
 // Mount the authentication and user management routes
 app.use('/api/user', authRoute);
+const workoutPlanRoute = require('./routes/workoutPlan');
+
 // Mount the new feature routes
 app.use('/api/finance', financeRoute);
 app.use('/api/shop', shopRoute);
@@ -72,6 +74,7 @@ app.use('/api/reviews', reviewRoute);
 app.use('/api/prs', prRoute);
 app.use('/api/workouts', workoutRoute);
 app.use('/api/diet-plans', dietPlanRoute);
+app.use('/api/workout-plans', workoutPlanRoute);
 app.use('/api/cron', cronRoute);
 
 // Base Route (Health Check)
