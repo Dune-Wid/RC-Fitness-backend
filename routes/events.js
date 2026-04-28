@@ -31,11 +31,38 @@ router.get('/:id', async (req, res) => {
   } catch (err) { res.status(500).json(err); }
 });
 router.post('/add', async (req, res) => {
-  const newEvent = new Event(req.body);
+  const { date, time, endDate, endTime, trainer } = req.body;
   try {
+    if (date && time) {
+      const startObj = new Date(`${date}T${time}`);
+      const now = new Date();
+      if (startObj < now) {
+        return res.status(400).json({ error: "Start date must be in the future" });
+      }
+      if (endDate && endTime) {
+        const endObj = new Date(`${endDate}T${endTime}`);
+        if (endObj <= startObj) {
+          return res.status(400).json({ error: "End date/time must be after start date/time" });
+        }
+      }
+    }
+
+    if (trainer && date && time) {
+      const duplicate = await Event.findOne({ trainer, date, time });
+      if (duplicate) {
+        return res.status(400).json({ error: "Trainer is already booked at this time" });
+      }
+    }
+
+    const newEvent = new Event(req.body);
     const savedEvent = await newEvent.save();
     res.status(200).json(savedEvent);
-  } catch (err) { res.status(500).json(err); }
+  } catch (err) {
+    if (err.name === 'ValidationError') {
+      return res.status(400).json({ error: err.message });
+    }
+    res.status(500).json(err);
+  }
 });
 router.delete('/delete/:id', async (req, res) => {
   try {
@@ -44,14 +71,39 @@ router.delete('/delete/:id', async (req, res) => {
   } catch (err) { res.status(500).json(err); }
 });
 router.put('/update/:id', async (req, res) => {
+  const { date, time, endDate, endTime, trainer } = req.body;
   try {
+    if (date && time) {
+      const startObj = new Date(`${date}T${time}`);
+      const now = new Date();
+      if (startObj < now) return res.status(400).json({ error: "Start date must be in the future" });
+      
+      if (endDate && endTime) {
+        const endObj = new Date(`${endDate}T${endTime}`);
+        if (endObj <= startObj) return res.status(400).json({ error: "End date/time must be after start date/time" });
+      }
+    }
+    
+    if (trainer && date && time) {
+      const duplicate = await Event.findOne({
+        _id: { $ne: req.params.id },
+        trainer,
+        date,
+        time
+      });
+      if (duplicate) return res.status(400).json({ error: "Trainer is already booked at this time" });
+    }
+
     const updatedEvent = await Event.findByIdAndUpdate(
       req.params.id,
       { $set: req.body },
-      { new: true }
+      { new: true, runValidators: true }
     );
     res.status(200).json(updatedEvent);
   } catch (err) {
+    if (err.name === 'ValidationError') {
+      return res.status(400).json({ error: err.message });
+    }
     res.status(500).json(err);
   }
 });
@@ -63,6 +115,22 @@ router.post('/register/:id', async (req, res) => {
   try {
     const event = await Event.findById(req.params.id);
     if (!event) return res.status(404).json("Event not found");
+
+    // Overbooking check
+    const currentRegs = await EventRegistration.countDocuments({ eventId: event._id });
+    if (currentRegs >= event.capacity) {
+      return res.status(400).json({ error: "Event has reached maximum capacity" });
+    }
+
+    // Registration closes 30 minutes before start
+    if (event.date && event.time) {
+      const eventStart = new Date(`${event.date}T${event.time}`);
+      const thirtyMinsBefore = new Date(eventStart.getTime() - 30 * 60000);
+      const now = new Date();
+      if (now >= thirtyMinsBefore) {
+        return res.status(400).json({ error: "Registration is closed (closes 30 minutes before start)" });
+      }
+    }
 
     const newRegistration = new EventRegistration({
       eventId: event._id,

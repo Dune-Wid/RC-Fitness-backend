@@ -5,8 +5,8 @@ const promotionSchema = new mongoose.Schema({
   code: { type: String, unique: true, sparse: true }, // For 'code' type
   title: { type: String }, // For 'sale' type
   discountType: { type: String, enum: ['percentage', 'flat'], default: 'percentage' },
-  discountValue: { type: Number, required: true },
-  userLimit: { type: Number }, // For 'code' type
+  discountValue: { type: Number, required: true, min: 0 },
+  userLimit: { type: Number, min: 1 }, // For 'code' type
   usageCount: { type: Number, default: 0 }, // For 'code' type
   startDate: { type: Date }, // For 'sale' type
   endDate: { type: Date },

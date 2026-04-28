@@ -75,6 +75,21 @@ router.post('/checkout', async (req, res) => {
   } = req.body;
   
   try {
+    if (totalAmount < 0) {
+      return res.status(400).json({ error: "Total amount cannot be negative" });
+    }
+
+    // 0. Stock validation before creating order
+    for (const item of products) {
+      const dbProduct = await Product.findById(item.productId);
+      if (!dbProduct) {
+        return res.status(404).json({ error: `Product not found: ${item.name}` });
+      }
+      if (dbProduct.stock < item.quantity) {
+        return res.status(400).json({ error: `Insufficient stock for product: ${item.name}. Available: ${dbProduct.stock}` });
+      }
+    }
+
     // 1. Create the Order
     const newOrder = new Order({
       userEmail,
@@ -147,11 +162,32 @@ router.get('/promotions', async (req, res) => {
 });
 
 router.post('/promotions/add', verifyAdmin, async (req, res) => {
+  const { discountType, discountValue, endDate, userLimit } = req.body;
+  
+  if (discountType === 'percentage' && discountValue > 100) {
+    return res.status(400).json({ error: "Percentage discount cannot exceed 100%" });
+  }
+  if (endDate) {
+    const endObj = new Date(endDate);
+    const now = new Date();
+    if (endObj < now) {
+      return res.status(400).json({ error: "End date must be in the future" });
+    }
+  }
+  if (userLimit !== undefined && userLimit < 1) {
+    return res.status(400).json({ error: "User limit must be at least 1" });
+  }
+
   const newPromo = new Promotion(req.body);
   try {
     const savedPromo = await newPromo.save();
     res.status(200).json(savedPromo);
-  } catch (err) { res.status(500).json(err); }
+  } catch (err) { 
+    if (err.name === 'ValidationError') {
+      return res.status(400).json({ error: err.message });
+    }
+    res.status(500).json(err); 
+  }
 });
 
 router.post('/promotions/validate', async (req, res) => {
