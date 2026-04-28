@@ -162,6 +162,10 @@ router.get('/promotions', async (req, res) => {
 });
 
 router.post('/promotions/add', verifyAdmin, async (req, res) => {
+  // Strip empty strings
+  if (req.body.code === '') delete req.body.code;
+  if (req.body.userLimit === '') delete req.body.userLimit;
+
   const { discountType, discountValue, endDate, userLimit } = req.body;
   
   if (discountType === 'percentage' && discountValue > 100) {
@@ -174,7 +178,7 @@ router.post('/promotions/add', verifyAdmin, async (req, res) => {
       return res.status(400).json({ error: "End date must be in the future" });
     }
   }
-  if (userLimit !== undefined && userLimit < 1) {
+  if (userLimit !== undefined && userLimit !== null && userLimit < 1) {
     return res.status(400).json({ error: "User limit must be at least 1" });
   }
 

@@ -145,6 +145,78 @@ const emailTemplates = {
                     <p style="text-align:center;color:#555;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;">Visit the shop or contact us if you have any questions.</p>
                 </div>
             </div>`
+    }),
+
+    eventAdded: (event, user) => ({
+        subject: `📅 New Event Scheduled: ${event.title} – RC Fitness`,
+        html: `
+            <div style="${styles.wrapper}">
+                <div style="${styles.header}">
+                    <h1 style="margin:0;font-size:26px;font-weight:900;letter-spacing:-1px;">RC FITNESS</h1>
+                    <p style="margin:6px 0 0;font-size:12px;opacity:0.7;letter-spacing:0.15em;text-transform:uppercase;">Upcoming Event</p>
+                </div>
+                <div style="${styles.body}">
+                    <p style="margin-bottom:16px;font-size:14px;color:#aaa;">Hello <strong style="color:#fff">${user.fullName}</strong>, a new event has been scheduled at the gym. Check it out!</p>
+                    <div>
+                        <div style="${styles.row}"><span style="${styles.label}">Event</span><span style="${styles.value}">${event.title}</span></div>
+                        <div style="${styles.row}"><span style="${styles.label}">Date</span><span style="${styles.value}">${event.date}</span></div>
+                        <div style="${styles.row}"><span style="${styles.label}">Time</span><span style="${styles.value}">${event.time}</span></div>
+                        <div style="${styles.row}"><span style="${styles.label}">Location</span><span style="${styles.value}">${event.location || 'TBA'}</span></div>
+                        <div style="${styles.row}"><span style="${styles.label}">Type</span><span style="${styles.badge('#ef4444')}">${event.type}</span></div>
+                    </div>
+                    <hr style="${styles.divider}"/>
+                    <p style="text-align:center;color:#555;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;">Don't miss out! We hope to see you there.</p>
+                </div>
+            </div>`
+    }),
+
+    eventUpdated: (event, user) => ({
+        subject: `🔄 Event Update: ${event.title} – RC Fitness`,
+        html: `
+            <div style="${styles.wrapper}">
+                <div style="${styles.header}">
+                    <h1 style="margin:0;font-size:26px;font-weight:900;letter-spacing:-1px;">RC FITNESS</h1>
+                    <p style="margin:6px 0 0;font-size:12px;opacity:0.7;letter-spacing:0.15em;text-transform:uppercase;">Event Details Changed</p>
+                </div>
+                <div style="${styles.body}">
+                    <p style="margin-bottom:16px;font-size:14px;color:#aaa;">Hello <strong style="color:#fff">${user.fullName}</strong>, the details for an upcoming event have changed. Here is the latest info:</p>
+                    <div>
+                        <div style="${styles.row}"><span style="${styles.label}">Event</span><span style="${styles.value}">${event.title}</span></div>
+                        <div style="${styles.row}"><span style="${styles.label}">New Date</span><span style="${styles.value}">${event.date}</span></div>
+                        <div style="${styles.row}"><span style="${styles.label}">New Time</span><span style="${styles.value}">${event.time}</span></div>
+                        <div style="${styles.row}"><span style="${styles.label}">Location</span><span style="${styles.value}">${event.location || 'TBA'}</span></div>
+                    </div>
+                    <hr style="${styles.divider}"/>
+                    <p style="text-align:center;color:#555;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;">Please update your calendar!</p>
+                </div>
+            </div>`
+    }),
+
+    eventReminder: (event, user, daysLeft) => ({
+        subject: `⏰ Event Reminder: ${event.title} is ${daysLeft === 0 ? 'Today!' : 'in 3 Days!'}`,
+        html: `
+            <div style="${styles.wrapper}">
+                <div style="background: ${daysLeft === 0 ? '#7f1d1d' : '#991b1b'}; padding: 24px; border-radius: 12px 12px 0 0; text-align: center;">
+                    <h1 style="margin:0;font-size:26px;font-weight:900;letter-spacing:-1px;">RC FITNESS</h1>
+                    <p style="margin:6px 0 0;font-size:12px;opacity:0.7;letter-spacing:0.15em;text-transform:uppercase;">Event Reminder</p>
+                </div>
+                <div style="${styles.body}">
+                    <p style="font-size:14px;color:#aaa;">Hello <strong style="color:#fff">${user.fullName}</strong>,</p>
+                    <p style="font-size:14px;color:#aaa;margin-bottom:20px;">
+                        ${daysLeft === 0
+                            ? `⚡ <strong style="color:#ef4444">Get ready! ${event.title} is happening TODAY!</strong>`
+                            : `⏰ Just a quick reminder that <strong style="color:#f87171">${event.title}</strong> is happening in exactly 3 days!`
+                        }
+                    </p>
+                    <div>
+                        <div style="${styles.row}"><span style="${styles.label}">Event</span><span style="${styles.value}">${event.title}</span></div>
+                        <div style="${styles.row}"><span style="${styles.label}">When</span><span style="${styles.value}">${event.date} at ${event.time}</span></div>
+                        <div style="${styles.row}"><span style="${styles.label}">Where</span><span style="${styles.value}">${event.location || 'TBA'}</span></div>
+                    </div>
+                    <hr style="${styles.divider}"/>
+                    <p style="text-align:center;color:#555;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;margin-top:16px;">We can't wait to see you there!</p>
+                </div>
+            </div>`
     })
 };
 

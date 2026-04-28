@@ -4,6 +4,8 @@ const Announcement = require('../models/Announcement');
 const EventRegistration = require('../models/EventRegistration');
 const nodemailer = require('nodemailer');
 const jwt = require('jsonwebtoken');
+const User = require('../models/User');
+const { sendEmail, emailTemplates } = require('../utils/mailer');
 
 // Security Middleware
 const verifyAdmin = (req, res, next) => {
@@ -34,12 +36,8 @@ router.post('/add', async (req, res) => {
   const { date, time, endDate, endTime, trainer } = req.body;
   try {
     if (date && time) {
-      const startObj = new Date(`${date}T${time}`);
-      const now = new Date();
-      if (startObj < now) {
-        return res.status(400).json({ error: "Start date must be in the future" });
-      }
       if (endDate && endTime) {
+        const startObj = new Date(`${date}T${time}`);
         const endObj = new Date(`${endDate}T${endTime}`);
         if (endObj <= startObj) {
           return res.status(400).json({ error: "End date/time must be after start date/time" });
@@ -57,6 +55,16 @@ router.post('/add', async (req, res) => {
     const newEvent = new Event(req.body);
     const savedEvent = await newEvent.save();
     res.status(200).json(savedEvent);
+
+    // Background notifications for all members
+    (async () => {
+        try {
+           const members = await User.find({ role: 'member', email: { $exists: true, $ne: null } });
+           for (const member of members) {
+               await sendEmail(member.email, emailTemplates.eventAdded(savedEvent, member));
+           }
+        } catch(e) { console.error('Error notifying members of new event:', e); }
+    })();
   } catch (err) {
     if (err.name === 'ValidationError') {
       return res.status(400).json({ error: err.message });
@@ -74,11 +82,8 @@ router.put('/update/:id', async (req, res) => {
   const { date, time, endDate, endTime, trainer } = req.body;
   try {
     if (date && time) {
-      const startObj = new Date(`${date}T${time}`);
-      const now = new Date();
-      if (startObj < now) return res.status(400).json({ error: "Start date must be in the future" });
-      
       if (endDate && endTime) {
+        const startObj = new Date(`${date}T${time}`);
         const endObj = new Date(`${endDate}T${endTime}`);
         if (endObj <= startObj) return res.status(400).json({ error: "End date/time must be after start date/time" });
       }
@@ -100,6 +105,16 @@ router.put('/update/:id', async (req, res) => {
       { new: true, runValidators: true }
     );
     res.status(200).json(updatedEvent);
+
+    // Background notifications for all members
+    (async () => {
+        try {
+           const members = await User.find({ role: 'member', email: { $exists: true, $ne: null } });
+           for (const member of members) {
+               await sendEmail(member.email, emailTemplates.eventUpdated(updatedEvent, member));
+           }
+        } catch(e) { console.error('Error notifying members of updated event:', e); }
+    })();
   } catch (err) {
     if (err.name === 'ValidationError') {
       return res.status(400).json({ error: err.message });
